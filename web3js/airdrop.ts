@@ -1,5 +1,6 @@
 import { getOrCreateAssociatedTokenAccount, createTransferInstruction } from "@solana/spl-token";
 import { Connection, Keypair, ParsedAccountData, PublicKey, sendAndConfirmTransaction, Transaction, BlockhashWithExpiryBlockHeight } from "@solana/web3.js";
+import * as fs from 'fs';
 import dotenv from "dotenv"
 dotenv.config();
 
@@ -35,17 +36,34 @@ async function sendToken(fromAccount: PublicKey, toWallet: PublicKey, latestBloc
 
     // const latestBlockHash = await SOLANA_CONNECTION.getLatestBlockhash('confirmed');
     tx.recentBlockhash = latestBlockHash.blockhash;
-    const signature = sendAndConfirmTransaction(SOLANA_CONNECTION, tx, [signer]); // no awwait
+    const signature = await sendAndConfirmTransaction(SOLANA_CONNECTION, tx, [signer]); // no awwait
+    console.log(signature);
 }
 
 function loadAddresses(): PublicKey[] {
-    let addresses = [
-        'GSSZb19uq1UKDuWBxsUF5VEbWGEo7NMuBqfeHtyFCp93',
-        'GSSZb19uq1UKDuWBxsUF5VEbWGEo7NMuBqfeHtyFCp93'
-    ]
-    return addresses.map(ele => new PublicKey(ele));
+    // let addresses = [
+    //     'GSSZb19uq1UKDuWBxsUF5VEbWGEo7NMuBqfeHtyFCp93',
+    //     'GSSZb19uq1UKDuWBxsUF5VEbWGEo7NMuBqfeHtyFCp93'
+    // ]
+
+    let addrs = [];
+    try {
+        const data = fs.readFileSync('addresses', 'utf8');
+        const lines = data.split('\n');
+        for (let line of lines) {
+            if (line) addrs.push(line);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+
+
+    return addrs.map(ele => new PublicKey(ele));
 }
 
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
 async function main() {
     // 1. Getting Source Token Account
@@ -59,11 +77,13 @@ async function main() {
 
     // 2. load address
     const addresses = loadAddresses();
+    console.log(addresses);
 
     // get latestBlockHash
     const latestBlockHash = await SOLANA_CONNECTION.getLatestBlockhash('confirmed');
-    
+
     for (let address of addresses) {
+        await sleep(500);
         sendToken(sourceAccount.address, address, latestBlockHash);
     }
 }
