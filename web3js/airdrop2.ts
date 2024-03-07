@@ -30,8 +30,13 @@ async function sendTokenToMulti(receivers: String[], latestBlockHash: BlockhashW
 
     // const latestBlockHash = await SOLANA_CONNECTION.getLatestBlockhash('confirmed');
     tx.recentBlockhash = latestBlockHash.blockhash;
-    const signature = await sendAndConfirmTransaction(SOLANA_CONNECTION, tx, [signer]); // no awwait
-    console.log(signature);
+
+    try {
+        const signature = await sendAndConfirmTransaction(SOLANA_CONNECTION, tx, [signer]); // no awwait
+        // console.log(signature);
+    } catch (err) {
+        console.error('====sendAndConfirmTransaction==== failed', receivers);
+    }
 }
 
 function loadReceivers(): String[] {
@@ -67,6 +72,8 @@ function chunkArray(myArray: String[], chunk_size: number): String[][] {
 }
 
 async function main() {
+    let start = new Date().getTime();
+    
     // load address
     let addresses = loadReceivers();
 
@@ -76,15 +83,14 @@ async function main() {
     // addresses = addresses.slice(0, 22)
     let chunks = chunkArray(addresses, 22);
 
-    let start = new Date().getTime();
     for (let chunk of chunks) {
         let now = new Date().getTime();
-        console.log('ssss', now - start);
+        console.log('ms', now - start);
         if (now - start >= 10 * 1000) {
-            break;
+            process.exit(0);
         }
         await sleep(100);
-        console.log(chunk);
+        // console.log(chunk);
         sendTokenToMulti(chunk, latestBlockHash);
     }
 }
