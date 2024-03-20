@@ -5,9 +5,11 @@ This article was co-authored by [bl0ckpain](https://twitter.com/bl0ckpain), a se
 ## Introduction
 
 Solana program security is not just about preventing hackers from stealing a project’s funds — it’s about ensuring a program behaves as intended, adhering to the project’s specifications and user expectations. 
+
 Solana program security can affect a dApp's performance, scalability, and interoperability. Thus, developers must be aware of potential attack vectors and common vulnerabilities before building consumer-grade applications.
 
 This article explores common vulnerabilities that developers will encounter when creating Solana programs. We start with an introduction to the attacker mindset for exploiting Solana programs, covering topics such as Solana’s programming model, how Solana’s design is inherently attacker-controlled, potential attack vectors, and common mitigation strategies. 
+
 Then, we cover a variety of different vulnerabilities, giving an explanation of the vulnerability as well as insecure and secure code examples where applicable. 
 
 Note this article is intended for a more intermediate or advanced audience as it assumes knowledge of Solana’s programming model and program development. *This article will not go through the process of building a program or Solana-specific concepts* — *we are focused on examining common vulnerabilities and learning how to mitigate them*. If you’re new to Solana, we recommend that you read these previous blog posts before going through this article:
@@ -22,13 +24,15 @@ Note this article is intended for a more intermediate or advanced audience as it
 ![img](https://assets-global.website-files.com/641ba798c17bb180d832b666/654d46c12245f98f47d174d7_program.jpg)
 
 [Solana's programming model](https://www.helius.dev/blog/the-solana-programming-model-an-introduction-to-developing-on-solana) shapes the security landscape of applications built on its network. On Solana, accounts act as containers for data, similar to files on a computer. We can separate accounts into two general types: executable and non-executable. Executable accounts, or *programs*, are accounts capable of running code. Non-executable accounts are used for data storage without the ability to execute code (because they don't store any code). 
+
 This decoupling of code and data means that programs are stateless — they interact with data stored in other accounts, passed by reference during transactions.
 
 ### Solana is Attacker-Controlled
 
 ![img](https://assets-global.website-files.com/641ba798c17bb180d832b666/654d4705a387b49455c060d2_transaction.jpg)
 
-A transaction specifies the program to call, a list of accounts, and a byte array of instruction data. This model relies on the program to parse and interpret the accounts and instructions a given transaction provides. 
+A transaction specifies the program to call, a list of accounts, and a byte array of instruction data. This model relies on the program to parse and interpret the accounts and instructions a given transaction provides.
+
 Allowing any account to be passed into a program's function grants attackers significant control over the data a program will operate on. Understanding Solana's inherently attacker-controlled programming model is crucial to developing secure programs.
 
 Given an attacker's ability to pass *any* account into a program's function, data validation becomes a fundamental pillar of Solana program security. Developers must ensure that their program can distinguish between legitimate and malicious inputs. 
@@ -67,6 +71,7 @@ The following sections will explore different vulnerabilities alphabetically. Ea
 ### The Vulnerability
 
 Account data matching is a vulnerability that arises when developers fail to check the data stored on an account matches an expected set of values. Without proper data validation checks, a program may inadvertently operate with incorrect or maliciously substituted accounts. 
+
 This vulnerability is particularly acute in scenarios involving permission-related checks.
 
 ### Example Scenario
@@ -157,6 +162,7 @@ pub fn realloc(
 ```
 
 Memory allocated for account data is already zero-initialized at the program's entry point. This means the new memory space is already zeroed out when data is reallocated to a larger size within a single transaction. 
+
 Re-zeroing this memory is unnecessary and results in additional compute unit consumption. Conversely, reallocating to a smaller size and then back to a larger one within the same transaction could expose stale data if **zero_init** is **false**.
 
 ### Example Scenario
@@ -200,6 +206,7 @@ To mitigate this issue, using the **zero_init** parameter prudently is crucial:
 - Set **zero_init** to **false** when increasing the data size without a prior decrease in the same transaction call since the memory will already be zero-initialized
 
 Instead of reallocating data to meet specific size requirements, developers should use[ Address Lookup Tables (ALTs)](https://docs.rs/solana-sdk/latest/solana_sdk/address_lookup_table/struct.AddressLookupTableAccount.html). ALTs allow developers to compress a transaction's data by storing up to 256 addresses in a single on-chain account. Each address within the table can then be referenced by a 1-byte index, significantly reducing the data needed for address references in a given transaction. 
+
 ALTs are much more helpful for scenarios requiring dynamic account interactions without the need for frequent memory resizing.
 
 ## Account Reloading
@@ -207,11 +214,13 @@ ALTs are much more helpful for scenarios requiring dynamic account interactions 
 ### The Vulnerability
 
 Account reloading is a vulnerability that arises when developers fail to update deserialized accounts after performing a CPI. Anchor does not automatically refresh the state of deserialized accounts after a CPI. 
+
 This could lead to scenarios where program logic operates on stale data, leading to logical errors or incorrect calculations.
 
 ### Example Scenario
 
 Consider a protocol where users can stake tokens to earn rewards over time. The program facilitating this includes functionality to update a user's staking rewards based on certain conditions or external triggers. 
+
 A user's rewards are calculated and updated through a CPI to a rewards distribution program. However, the program fails to update the original staking account after the CPI to reflect the new rewards balance:
 
 ```Rust
@@ -291,13 +300,17 @@ pub fn update_rewards(ctx: Context<UpdateStakingRewards>, amount: u64) -> Result
 ### The Vulnerability
 
 Arbitrary CPIs occur when a program invokes another program without verifying the target program's identity. 
+
 This vulnerability exists because the Solana runtime allows any program to call another program if the caller has the callee's program ID and adheres to the callee's interface. 
+
 If a program performs CPIs based on user input without validating the callee's program ID, it could execute code in an attacker-controlled program.
 
 ### Example Scenario
 
 Consider a program that distributes awards to participants based on their contributions to a project. After distributing the rewards, the program records the details in a separate ledger program for auditing and tracking purposes. 
+
 The ledger program is assumed to be a trusted program, providing a public interface for keeping track of specific entries from authorized programs. The program includes a function to distribute and record rewards, which takes in the ledger program as an account. 
+
 However, the function fails to verify the provided **ledger_program** before making a CPI to it:
 
 ```Rust
@@ -915,16 +928,21 @@ pub struct SetInitialAdmin<'info> {
 Loss of precision, albeit minuscule in appearance, can pose a significant threat to a program. It can lead to incorrect calculations, arbitrage opportunities, and unexpected program behavior.
 
 Precision loss in arithmetic operations is a common source of errors. With Solana programs, fixed-point arithmetic is recommended whenever possible. This is because programs only support a[ limited subset of Rust's float operations](https://solana.com/docs/programs/limitations#float-rust-types-support). If a program attempts to use an unsupported float operation, the runtime will return an unresolved symbol error. Additionally, float operations require more instructions compared to their integer equivalents. 
+
 The use of fixed-point arithmetic and the need to handle large numbers of tokens and fractional amounts accurately can exacerbate precision loss.
 
 ### Multiplication After Division
 
 While the[ associative property](https://en.wikipedia.org/wiki/Associative_property) holds for most mathematical operations, its application in computer arithmetic can lead to unexpected precision loss. 
-A classic example of precision loss occurs when performing multiplication after division, which can yield different results from performing multiplication before division. For example, consider the following expressions: **(a / c) \* b** and **(a \* b) / c**. Mathematically, these expressions are associative - they *should* yield the same result. However, in the context of Solana and fixed-point arithmetic, the order of operations matters significantly. Performing division first **(a / c)** may result in a loss of precision if the quotient is rounded down before it's multiplied by **b**. This could result in a smaller result than expected. Conversely, multiplying **(a \* b)** before dividing by **c** could preserve more of the original precision. This difference can lead to incorrect calculations, creating unexpected program behavior and/or arbitrage opportunities.
+
+A classic example of precision loss occurs when performing multiplication after division, which can yield different results from performing multiplication before division. For example, consider the following expressions: **(a / c) \* b** and **(a \* b) / c**. Mathematically, these expressions are associative - they *should* yield the same result. However, in the context of Solana and fixed-point arithmetic, the order of operations matters significantly. Performing division first **(a / c)** may result in a loss of precision if the quotient is rounded down before it's multiplied by **b**. This could result in a smaller result than expected. 
+
+Conversely, multiplying **(a \* b)** before dividing by **c** could preserve more of the original precision. This difference can lead to incorrect calculations, creating unexpected program behavior and/or arbitrage opportunities.
 
 ### **saturating_\*** Arithmetic Functions
 
 While **saturating_\*** arithmetic functions prevent overflow and underflow by capping values at their maximum or minimum possible values, they can lead to subtle bugs and precision loss if this cap is reached unexpectedly. 
+
 This occurs when the program's logic assumes that saturation alone will guarantee an accurate result and ignores handling the potential loss of precision or accuracy.
 
 For example, imagine a program designed to calculate and distribute rewards to users based on the amount of tokens they trade within a specific period:
@@ -952,6 +970,7 @@ pub fn collateral_to_liquidity(&self, collateral_amount: u64) -> Result<u64, Pro
 ```
 
 In this scenario, rounding up can lead to issuing more liquidity tokens than the collateral amount justifies. Malicious actors can exploit this discrepancy to perform arbitrage attacks to extract value from the protocol via favorably influenced rounding outcomes. To mitigate, use **try_floor_u64** to round down to the nearest whole number. This approach minimizes the risk of artificially inflating values and ensures that any rounding does not give the user an advantage at the expense of the system. 
+
 Alternatively, implement logic to handle scenarios where rounding could explicitly impact the outcome. This might include setting specific thresholds for rounding decisions or applying different logic based on the size of the values involved.
 
 ## Missing Ownership Check
@@ -959,6 +978,7 @@ Alternatively, implement logic to handle scenarios where rounding could explicit
 ### The Vulnerability
 
 Ownership checks are crucial to validate that the expected program owns an account involved in a transaction or operation. Accounts include an[ **owner**](https://docs.rs/solana-program/latest/solana_program/account_info/struct.AccountInfo.html#structfield.owner) field, which indicates the program with the authority to write to the account's data. This field ensures that only authorized programs can modify an account's state. 
+
 Moreover, this field is useful for ensuring that accounts passed into an instruction are owned by the expected program. Missing ownership checks can lead to severe vulnerabilities, including unauthorized fund transfers and the execution of privileged operations.
 
 ### Example Scenario
@@ -1004,7 +1024,9 @@ Anchor streamlines this check with the **Account** type. **Account<'info, T>** i
 ### Read-Only Accounts
 
 It's equally important to verify the validity of accounts specified as read-only within a program's execution context. This is crucial because a malicious actor could pass accounts with arbitrary or crafted data instead of legitimate accounts. 
+
 This could lead to unexpected or harmful program behavior. Developers should still perform checks to ensure that accounts a program needs to read from are genuine and not tampered with. 
+
 This could involve verifying the account's address against known values or confirming the account's owner is as expected, especially for sysvars (i.e., read-only system accounts, such as **Clock** or **EpochSchedule**). Access sysvars using the **get()** method, which doesn't require any manual address or ownership checks. This is a safer approach to accessing these accounts; however, not all sysvars support the **get()** method. In this case, access them using their public address.
 
 ## Missing Signer Check
@@ -1396,6 +1418,7 @@ pub struct SubmitVote<'info> {
 ```
 
 In this scenario, an attacker would try to carefully craft a voting session that, when combined with the static seed **"session"**, would result in a PDA that coincidentally matches the PDA generated for a different voting session. 
+
 Deliberately creating a PDA that clashes with another voting session's PDA could disrupt the platform's operations by, for example, preventing legitimate votes for proposals or denying new initiatives from being added to the platform since Solana's runtime cannot distinguish between the colliding PDAs.
 
 ### Recommended Mitigation
@@ -1411,11 +1434,13 @@ To mitigate the risk of seed collisions, developers can:
 ### The Vulnerability
 
 Type cosplay is a vulnerability where one account type is misrepresented as another due to a lack of type checks during deserialization. 
+
 This can lead to the execution of unauthorized actions or data corruption, as the program would operate based on the incorrect assumption of the account's role or permissions. Always check the account's intended type during deserialization explicitly.
 
 ### Example Scenario
 
 Consider a program that manages access to admin operations based on a user's role. Each user account includes a role discriminator to distinguish between regular users and administrators. The program contains a function to update admin settings intended only for administrators. 
+
 However, the program fails to check the account's discriminator and deserializes user account data without confirming whether the account is an administrator:
 
 ```Rust
@@ -1484,6 +1509,7 @@ Anchor simplifies the mitigation of type cosplay vulnerabilities by automaticall
 ## Conclusion
 
 The importance of program security cannot be overstated. This article has traversed the spectrum of common vulnerabilities, from Rust-specific errors to the complexities of Anchor’s **realloc** method. The path to mastering each of these vulnerabilities, and program security in general, is ongoing and demands continuous learning, adaptation, and collaboration. 
+
 As developers, our commitment to security is not just about safeguarding assets; it’s about fostering trust, ensuring the integrity of our applications, and contributing to Solana’s growth and stability.
 
 If you’ve read this far, thank you anon! Be sure to enter your email address below so you’ll never miss an update about what’s new on Solana. Ready to dive deeper? Explore the latest articles on the[ Helius blog](https://www.helius.dev/blog) and continue your Solana journey, today.
