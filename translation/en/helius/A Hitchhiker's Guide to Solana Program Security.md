@@ -74,7 +74,6 @@ This vulnerability is particularly acute in scenarios involving permission-relat
 Consider a program where users can deposit tokens into a liquidity pool. The program must validate that the deposited tokens belong to the depositor and that the token owner authorizes the deposit. However, the program fails to verify that the depositor owns the deposited tokens:
 
 ```Rust
-解释
 pub fn deposit_tokens(ctx: Context<DepositTokens>, amount: u64) -> Result<()> {
     let depositor_token_account = &ctx.accounts.depositor_token_account;
     let liquidity_pool_account = &ctx.accounts.liquidity_pool_account;
@@ -96,7 +95,6 @@ pub struct DepositTokens<'info> {
     pub liquidity_pool_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>
 }
-Copy
 ```
 
 ### Recommended Mitigation
@@ -104,7 +102,6 @@ Copy
 To mitigate this vulnerability, developers can implement explicit checks comparing the account keys and stored data against expected values. For instance, verify that the depositor's public key matches the owner field of the token account being used for the deposit:
 
 ```Rust
-解释
 pub fn deposit_tokens(ctx: Context<DepositTokens>, amount: u64) -> Result<()> {
     let depositor_token_account = &ctx.accounts.depositor_token_account;
     let liquidity_pool_account = &ctx.accounts.liquidity_pool_account;
@@ -118,13 +115,11 @@ pub fn deposit_tokens(ctx: Context<DepositTokens>, amount: u64) -> Result<()> {
 
     Ok(())
 }
-Copy
 ```
 
 Developers can also use Anchor's **has_one** and **constraint** attributes to enforce data validation checks declaratively. Using our example above, we could use the **constraint** attribute to check the depositor's public key and the deposit token account's owner are equivalent:
 
 ```Rust
-解释
 #[derive(Accounts)]
 pub struct DepositTokens<'info> {
     #[account(mut)]
@@ -138,7 +133,6 @@ pub struct DepositTokens<'info> {
     pub liquidity_pool_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>
 }
-Copy
 ```
 
 ## Account Data Reallocation
@@ -155,13 +149,11 @@ The **realloc** method has two parameters:
 **realloc** is defined as follows:
 
 ```Rust
-解释
 pub fn realloc(
     &self,
     new_len: usize,
     zero_init: bool
 ) -> Result<(), ProgramError>
-Copy
 ```
 
 Memory allocated for account data is already zero-initialized at the program's entry point. This means the new memory space is already zeroed out when data is reallocated to a larger size within a single transaction. 
@@ -173,7 +165,6 @@ Consider a token staking program where the amount of stake information (e.g., st
 This could occur in a batch processing scenario where multiple stakes are adjusted in response to certain conditions:
 
 ```Rust
-解释
 pub fn adjust_stakes(ctx: Context<AdjustStakes>, adjustments: Vec<StakeAdjustments>) -> ProgramResult {
     // Logic to adjust stakes based on the adjustments provided
     for adjustment in adjustments {
@@ -197,7 +188,6 @@ pub struct AdjustStakes<'info> {
     staking_data: AccountInfo<'info>,
     // Other relevant accounts
 }
-Copy
 ```
 
 In this scenario, **adjust_stakes** might need to reallocate **staking_data** to accommodate the size required by the adjustments. If the data size is reduced to remove stake information and then increased again within the same transaction, setting **zero_init** to **false** could expose stale data.
@@ -225,7 +215,6 @@ Consider a protocol where users can stake tokens to earn rewards over time. The 
 A user's rewards are calculated and updated through a CPI to a rewards distribution program. However, the program fails to update the original staking account after the CPI to reflect the new rewards balance:
 
 ```Rust
-解释
 pub fn update_rewards(ctx: Context<UpdateStakingRewards>, amount: u64) -> Result<()> {
     let staking_seeds = &[b"stake", ctx.accounts.staker.key().as_ref(), &[ctx.accounts.staking_account.bump]];
 
@@ -265,7 +254,6 @@ pub struct StakingAccount {
     pub rewards: u64,
     pub bump: u8,
 }
-Copy
 ```
 
 In this example, the **update_rewards** function attempts to update the rewards for a user's staking account through a CPI call to a rewards distribution program. Initially, the program logs **ctx.accounts.staking_account.rewards** (i.e., the rewards balance) after the CPI and then continues onto logic that uses the stale **ctx.accounts.staking_account.rewards** data. The issue is that the staking account's state is not automatically updated post-CPI, which is why the data is stale.
@@ -275,7 +263,6 @@ In this example, the **update_rewards** function attempts to update the rewards 
 To mitigate this issue, explicitly call Anchor's[ **reload**](https://docs.rs/anchor-lang/latest/src/anchor_lang/accounts/account.rs.html#271-275) method to reload a given account from storage. Reloading an account post-CPI will accurately reflect its state:
 
 ```Rust
-解释
 pub fn update_rewards(ctx: Context<UpdateStakingRewards>, amount: u64) -> Result<()> {
     let staking_seeds = &[b"stake", ctx.accounts.staker.key().as_ref(), &[ctx.accounts.staking_account.bump]];
 
@@ -297,7 +284,6 @@ pub fn update_rewards(ctx: Context<UpdateStakingRewards>, amount: u64) -> Result
 
     Ok(())
 }
-Copy
 ```
 
 ## Arbitrary CPI
@@ -315,7 +301,6 @@ The ledger program is assumed to be a trusted program, providing a public interf
 However, the function fails to verify the provided **ledger_program** before making a CPI to it:
 
 ```Rust
-解释
 pub fn distribute_and_record_rewards(ctx: Context<DistributeAndRecord>, reward_amount: u64) -> ProgramResult {
     // Reward distribution logic
 
@@ -339,7 +324,6 @@ pub struct DistributeAndRecord<'info> {
     reward_account: AccountInfo<'info>,
     ledger_program: AccountInfo<'info>,
 }
-Copy
 ```
 
 An attacker could exploit this by passing a malicious program's ID as the **ledger_program**, leading to unintended consequences.
@@ -349,7 +333,6 @@ An attacker could exploit this by passing a malicious program's ID as the **ledg
 To secure against this issue, developers can add a check that verifies the ledger program's identity before performing the CPI. This check would ensure that the CPI call is made to the intended program, preventing arbitrary CPIs:
 
 ```Rust
-解释
 pub fn distribute_and_record_rewards(ctx: Context<DistributeAndRecord>, reward_amount: u64) -> ProgramResult {
     // Reward distribution logic
 
@@ -378,7 +361,6 @@ pub struct DistributeAndRecord<'info> {
     reward_account: AccountInfo<'info>,
     ledger_program: AccountInfo<'info>,
 }
-Copy
 ```
 
 A program may have a publicly available CPI module if it was written using Anchor. This makes invoking the program from another Anchor program easy and secure. 
@@ -396,7 +378,6 @@ This limitation becomes problematic in scenarios such as team changes, protocol 
 Consider a program where a global admin authority is responsible for setting specific protocol parameters through a **set_params** function. The program does not include a mechanism to change the global admin:
 
 ```Rust
-解释
 pub fn set_params(ctx: Context<SetParams>, /* parameters to be set */) -> Result<()> {
     require_keys_eq!(
         ctx.accounts.current_admin.key(),
@@ -405,7 +386,6 @@ pub fn set_params(ctx: Context<SetParams>, /* parameters to be set */) -> Result
 
     // Logic to set parameters
 }
-Copy
 ```
 
 Here, the authority is statically defined without the ability to update it to a new address.
@@ -420,7 +400,6 @@ A secure approach to mitigating this issue is to create a two-step process for t
 This would look something like:
 
 ```Rust
-解释
 pub fn nominate_new_authority(ctx: Context<NominateAuthority>, new_authority: Pubkey) -> Result<()> {
     let state = &mut ctx.accounts.state;
     require_keys_eq!(
@@ -471,7 +450,6 @@ pub struct ProgramState {
     pub pending_authority: Option<Pubkey>,
     // Other relevant program state fields
 }
-Copy
 ```
 
 In this example, the **ProgramState** account structure holds the current **authority** and an optional **pending_authority**. The **NominateAuthority** context ensures that the current authority signs the transaction, allowing them to nominate a new authority. The **AcceptAuthority** context checks that the **pending_authority** matches the signer of the transaction, allowing them to accept and become the new authority. This setup ensures a secure and controlled transition of authority within the program.
@@ -488,7 +466,6 @@ Failing to use the canonical bump can lead to vulnerabilities, such as malicious
 Consider a program designed to create unique user profiles, each with an associated PDA derived explicitly using **create_program_address**. The program allows for creating a profile by taking a user-provided bump. However, this is problematic as it introduces the risk of using the non-canonical bump:
 
 ```Rust
-解释
 pub fn create_profile(ctx: Context<CreateProfile>, user_id: u64, attributes: Vec<u8>, bump: u8) -> Result<()> {
     // Explicitly derive the PDA using create_program_address and a user-provided bump
     let seeds: &[&[u8]] = &[b"profile", &user_id.to_le_bytes(),&[bump]];
@@ -520,7 +497,6 @@ pub struct UserProfile {
     pub user_id: u64,
     pub attributes: Vec<u8>,
 }
-Copy
 ```
 
 In this scenario, the program derives a **UserProfile** PDA using **create_program_address** with seeds that include a user-provided bump. Using a user-provided bump is problematic because it fails to ensure the use of the canonical bump. This would allow a malicious actor to create multiple PDAs with different bumps for the same user ID.
@@ -530,7 +506,6 @@ In this scenario, the program derives a **UserProfile** PDA using **create_progr
 To mitigate this issue, we can refactor our example to derive PDAs using **find_program_address** and validate the bump seed explicitly:
 
 ```Rust
-解释
 pub fn create_profile(ctx: Context<CreateProfile>, user_id: u64, attributes: Vec<u8>) -> Result<()> {
     // Securely derive the PDA using find_program_address to ensure the canonical bump is used
     let seeds: &[&[u8]] = &[b"profile", user_id.to_le_bytes()];
@@ -567,7 +542,6 @@ pub struct UserProfile {
     pub attributes: Vec<u8>,
     pub bump: u8,
 }
-Copy
 ```
 
 Here, **find_program_address** is used to derive the PDA with the canonical bump seed to ensure a deterministic and secure PDA creation. The canonical bump is stored in the **UserProfile** account, allowing for efficient and secure validation in subsequent operations. We prefer **find_program_address** over **create_program_address** because the latter creates a valid PDA *without searching for a bump seed*. Because it doesn't search for a bump seed, it may unpredictably return an error for any given set of seeds and is not generally suitable for creating PDAs. **find_program_address** will *always* use the canonical bump when creating a PDA. This is because it iterates through various **create_program_address** calls, starting with a bump of 255 and decrementing with each iteration. Once a valid address is found, the function returns the derived PDA and the canonical bump used to derive it.
@@ -586,7 +560,6 @@ The issue arises from a failure to properly mark an account as closed or failing
 Consider a program that allows users to create and close data storage accounts. The program closes an account by transferring out its lamports:
 
 ```Rust
-解释
 pub fn close_account(ctx: Context<CloseAccount>) -> ProgramResult {
     let account = ctx.accounts.data_account.to_account_info();
     let destination = ctx.accounts.destination.to_account_info();
@@ -612,7 +585,6 @@ pub struct CloseAccount<'info> {
 pub struct Data {
     data: u64,
 }
-Copy
 ```
 
 This is problematic as the program fails to zero out the account's data or mark it as closed. Merely transferring out its remaining lamports does not close the account.
@@ -622,7 +594,6 @@ This is problematic as the program fails to zero out the account's data or mark 
 To mitigate this issue, not only should the program transfer out all lamposts, it should also zero out the account's data and mark it with a discriminator (i.e., **"CLOSED_ACCOUNT_DISCRIMINATOR"**). The program should also implement checks to prevent closed accounts from being reused in future transactions:
 
 ```Rust
-解释
 use anchor_lang::__private::CLOSED_ACCOUNT_DISCRIMINATOR;
 use anchor_lang::prelude::*;
 use std::io::Cursor;
@@ -693,7 +664,6 @@ pub struct CloseAccount<'info> {
 pub struct Data {
     data: u64,
 }
-Copy
 ```
 
 However, zeroing out the data and adding the closed discriminator is not enough. A user can keep an account from being garbage collected by refunding the account's lamports before the end of an instruction. 
@@ -714,7 +684,6 @@ Consider a program designed to reward users based on their participation in a ce
 A user should receive a standard reward in one account and a potential bonus in another account based on specific predetermined criteria:
 
 ```Rust
-解释
 pub fn distribute_rewards(ctx: Context<DistributeRewards>, reward_amount: u64, bonus_amount: u64) -> Result<()> {
     let reward_account = &mut ctx.accounts.reward_account;
     let bonus_reward = &mut ctx.accounts.bonus_account;
@@ -738,7 +707,6 @@ pub struct DistributeRewards<'info> {
 pub struct RewardAccount {
     pub balance: u64,
 }
-Copy
 ```
 
 If a malicious actor passes the same account for **reward_account** and **bonus_account**, the account's balance will be incorrectly updated twice.
@@ -748,7 +716,6 @@ If a malicious actor passes the same account for **reward_account** and **bonus_
 To mitigate this issue, add a check within the instruction logic to verify that the public keys of the two accounts are not identical:
 
 ```Rust
-解释
 pub fn distribute_rewards(ctx: Context<DistributeRewards>, reward_amount: u64, bonus_amount: u64) -> Result<()> {
     if ctx.accounts.reward_account.key() == ctx.accounts.bonus_account.key() {
         return Err(ProgramError::InvalidArgument.into())
@@ -763,13 +730,11 @@ pub fn distribute_rewards(ctx: Context<DistributeRewards>, reward_amount: u64, b
 
     Ok(())
 }
-Copy
 ```
 
 Developers can use Anchor's account constraints to add a more explicit check on the account. This can be done using the **#[account]** attribute and the **constraint** keyword:
 
 ```Rust
-解释
 pub fn distribute_rewards(ctx: Context<DistributeRewards>, reward_amount: u64, bonus_amount: u64) -> Result<()> {
     let reward_account = &mut ctx.accounts.reward_account;
     let bonus_reward = &mut ctx.accounts.bonus_account;
@@ -796,7 +761,6 @@ pub struct DistributeRewards<'info> {
 pub struct RewardAccount {
     pub balance: u64,
 }
-Copy
 ```
 
 ## Frontrunning
@@ -810,7 +774,6 @@ With the rising popularity of transaction bundlers, frontrunning is a concern th
 Imagine a protocol that handles purchasing and bidding for a product, storing the seller's pricing information in an account named **SellInfo**:
 
 ```Rust
-解释
 #[derive(Accounts)]
 pub struct SellProduct<'info> {
   product_listing: Account<'info, ProductListing>,
@@ -839,14 +802,12 @@ pub struct ProductListing {
   product_owner: Pubkey,
   product: Pubkey,
 }
-Copy
 ```
 
 To purchase a **Product** listed, a buyer must pass in the **ProductListing** account related to the product they want. But what if the seller can change the **sale_price** of their listing?
 
 ```Rust
 pub fn change_sale_price(ctx: Context<ChangeSalePrice>, new_price: u64) -> Result<()> {...}
-Copy
 ```
 
 This would introduce a frontrunning opportunity for the seller, especially if the buyer's purchasing transaction doesn't include **expected_price** checks to ensure they are paying no more than expected for the product they want. If the purchaser submits a transaction to buy the given **Product** is would be possible for the seller to call **change_sale_price**, and, using Jito, ensure this transaction is included before the purchaser's transaction. A malicious seller could change the price in the **ProductListing** account to an exorbitant amount, unbeknownst to the purchaser, forcing them to pay much more than expected for the **Product**!
@@ -856,12 +817,10 @@ This would introduce a frontrunning opportunity for the seller, especially if th
 A simple solution would be including **expected_price** checks on the purchasing side of the deal, preventing the buyer from paying more than expected for the **Product** they want to buy:
 
 ```Rust
-解释
 pub fn purchase_product(ctx: Context<PurchaseProduct>, expected_price: u64) -> Result<()> {
   assert!(ctx.accounts.product_listing.sale_price <= expected_price);
   ...
 }
-Copy
 ```
 
 ## Insecure Initialization
@@ -876,7 +835,6 @@ A common practice is to use the program’s **upgrade_authority** as the authori
 ### Insecure Example and How to Mitigate
 
 ```Rust
-解释
 pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
   ctx.accounts.central_state.authority = authority.key();
   ...  
@@ -901,7 +859,6 @@ pub struct CentralState {
   authority: Pubkey,
   ...
 }
-Copy
 ```
 
 The example above is a stripped-down initialize function that sets the authority of a **CentralState** account for the instruction caller. However, this could be any account that calls initialize! As previously mentioned, a common way to secure an initialization function is to use the program’s **upgrade_authority**, known at deployment.
@@ -909,7 +866,6 @@ The example above is a stripped-down initialize function that sets the authority
 [Below is an example from the Anchor documentation](https://docs.rs/anchor-lang/latest/anchor_lang/accounts/account/struct.Account.html#example-1), which uses constraint to ensure only the program's upgrade authority can call initialize:
 
 ```Rust
-解释
 use anchor_lang::prelude::*;
 use crate::program::MyProgram;
 
@@ -950,7 +906,6 @@ pub struct SetInitialAdmin<'info> {
     pub program_data: Account<'info, ProgramData>,
     pub system_program: Program<'info, System>,
 }
-Copy
 ```
 
 ## Loss of Precision
@@ -978,7 +933,6 @@ For example, imagine a program designed to calculate and distribute rewards to u
 pub fn calculate_reward(transaction_amount: u64, reward_multiplier: u64) -> u64 {
     transaction_amount.saturating_mul(reward_multiplier)
 }
-Copy
 ```
 
 Consider the scenario where the **transaction_amount** is 100,000 tokens, and the **reward_multiplier** is 100 tokens per transaction. Multiplying the two will exceed the maximum value a **u64** can hold. This means their product will be capped, leading to a substantial loss of precision by under-rewarding the user.
@@ -990,13 +944,11 @@ Rounding operations are a common loss of precision in programming. The choice of
 Consider a Solana program that converts collateral into liquidity based on market conditions. The program uses **try_round_u64()** to round the result of a division operation:
 
 ```Rust
-解释
 pub fn collateral_to_liquidity(&self, collateral_amount: u64) -> Result<u64, ProgramError> {
     Decimal::from(collateral_amount)
         .try_div(self.0)?
         .try_round_u64()
 }
-Copy
 ```
 
 In this scenario, rounding up can lead to issuing more liquidity tokens than the collateral amount justifies. Malicious actors can exploit this discrepancy to perform arbitrage attacks to extract value from the protocol via favorably influenced rounding outcomes. To mitigate, use **try_floor_u64** to round down to the nearest whole number. This approach minimizes the risk of artificially inflating values and ensures that any rounding does not give the user an advantage at the expense of the system. 
@@ -1014,7 +966,6 @@ Moreover, this field is useful for ensuring that accounts passed into an instruc
 Consider a program function defined to allow admin-only withdrawals from a vault. The function takes in a configuration account (i.e., **config**) and uses its **admin** field to check whether the provided admin account's public key is the same as the one stored in the **config** account. However, it fails to verify the **config** account's ownership, assuming it is trustworthy:
 
 ```Rust
-解释
 pub fn admin_token_withdraw(program_id: &Pubkey, accounts: &[AccountInfo], amount: u64) -> ProgramResult {
     // Account setup
 
@@ -1024,7 +975,6 @@ pub fn admin_token_withdraw(program_id: &Pubkey, accounts: &[AccountInfo], amoun
 
     // Transfer funds logic
 }
-Copy
 ```
 
 A malicious actor could exploit this by supplying a **config** account they control with a matching **admin** field, effectively tricking the program into executing the withdrawal.
@@ -1034,7 +984,6 @@ A malicious actor could exploit this by supplying a **config** account they cont
 To mitigate this, perform an ownership check that verifies the **owner** field of the account:
 
 ```Rust
-解释
 pub fn admin_token_withdraw(program_id: &Pubkey, accounts: &[AccountInfo], amount: u64) -> ProgramResult {
     // Account setup
 
@@ -1048,7 +997,6 @@ pub fn admin_token_withdraw(program_id: &Pubkey, accounts: &[AccountInfo], amoun
 
     // Transfer funds logic
 }
-Copy
 ```
 
 Anchor streamlines this check with the **Account** type. **Account<'info, T>** is a wrapper around **AccountInfo**, which verifies program ownership and deserializes the underlying data into **T** (i.e., the specified account type). This allows developers to use **Account<'info, T>** to validate account ownership easily. Developers can also use the **#[account]** attribute to add the[ **Owner**](https://docs.rs/anchor-lang/latest/anchor_lang/trait.Owner.html) trait to a given account. This trait defines an address expected to own the account. In addition, developers can use the **owner** constraint to define the program that should own a given account if it's different from the currently executing one. This is useful, for example, when writing an instruction that expects an account to be a PDA derived from a different program. The **owner** constraint is defined as **#[account(owner = <expr>)]**, where **<expr>** is an arbitrary expression.
@@ -1073,7 +1021,6 @@ This vulnerability arises from failing to validate whether an operation is signe
 Take the following function:
 
 ```Rust
-解释
 pub fn update_admin(program_id: &Pubkey, accounts &[AccountInfo]) -> ProgramResult {
     let account_iter = &mut accounts.iter();
     let config = ConfigAccount::unpack(next_account_info(account_iter)?)?;
@@ -1088,7 +1035,6 @@ pub fn update_admin(program_id: &Pubkey, accounts &[AccountInfo]) -> ProgramResu
 
     Ok(())
 }
-Copy
 ```
 
 This function intends to update the program's admin. It includes a check to ensure that the current admin initiates the operation, which is good access control. However, the function fails to verify that the current admin's private key signed the transaction. 
@@ -1101,7 +1047,6 @@ Programs must include checks to verify that an account has been signed by the ap
 The updated code example would look like this:
 
 ```Rust
-解释
 pub fn update_admin(program_id: &Pubkey, accounts &[AccountInfo]) -> ProgramResult {
     let account_iter = &mut accounts.iter();
     let config = ConfigAccount::unpack(next_account_info(account_iter)?)?;
@@ -1121,7 +1066,6 @@ pub fn update_admin(program_id: &Pubkey, accounts &[AccountInfo]) -> ProgramResu
 
     Ok(())
 }
-Copy
 ```
 
 Anchor streamlines this entire process with the [**Signer<’info>** account type](https://docs.rs/anchor-lang/latest/anchor_lang/accounts/signer/struct.Signer.html).
@@ -1140,7 +1084,6 @@ Rust includes checks for integer overflows and underflows when compiling in debu
 An attacker can exploit this vulnerability by taking advantage of the silent overflow/underflow behavior in release mode, especially functions that handle token balances. Take the following example:
 
 ```Rust
-解释
 pub fn process_instruction(
     _program_id: & Pubkey,
     accounts: [&AccountInfo],
@@ -1159,7 +1102,6 @@ pub fn process_instruction(
     
     Ok(())
 }
-Copy
 ```
 
 This function assumes the balance is stored in the first byte for simplicity. It takes the account's balance and subtracts **tokens_to_subtract** from it. If the user's balance is less than **tokens_to_subtract**, it'll cause an underflow. For example, a user with 10 tokens would underflow to a total balance of 165 tokens
@@ -1175,7 +1117,6 @@ The easiest way to mitigate this vulnerability is to set the key **overflow-chec
 Use Rust's **checked_\*** arithmetic functions on each integer type to strategically check for overflows and underflows throughout your program. These functions will return **None** if an overflow or underflow occurs. This allows the program to handle the error gracefully. For example, you could refactor the previous code to:
 
 ```Rust
-解释
 pub fn process_instruction(
     _program_id: & Pubkey,
     accounts: [&AccountInfo],
@@ -1199,7 +1140,6 @@ pub fn process_instruction(
 
     Ok(())
 }
-Copy
 ```
 
 In the revised example, **checked_sub** is used to subtract **tokens_to_subtract** from **balance**. Thus, if **balance** is sufficient to cover the subtraction, **checked_sub** will return **Some(new_balance)**. The program continues to update the account's balance safely and logs it. However, if the subtraction would result in an underflow, **checked_sub** returns **None**, which we can handle by returning an error.
@@ -1214,7 +1154,6 @@ Instead, the following expression would look like this using the Checked Math ma
 use checked_math::checked_math as cm;
 
 cm!((x * y) + z).unwrap()
-Copy
 ```
 
 This is more convenient to write, preserves the expression's mathematical notation, and only requires one **.unwrap()**. This is because the macro converts normal math expressions into an expression that returns **None** if any of the checked steps return **None**. **Some(_)** is returned, if successful, which is why we unwrap the expression at the end.
@@ -1231,7 +1170,6 @@ Use Rust's safe casting methods to mitigate this vulnerability. This includes me
 pub fn convert_token_amount(amount: u64) -> Result<u32, ProgramError> {
     u32::try_from(amount).map_err(|_| ProgramError::InvalidArgument)
 }
-Copy
 ```
 
 In this example, if **amount** exceeds the maximum value a **u32** can hold (i.e., 4 294 967 295), the conversion fails, and the program returns an error. This prevents a potential overflow/underflow from occurring.
@@ -1249,7 +1187,6 @@ Consider a program designed to facilitate token staking and distributing rewards
 The PDA is derived using a static seed (e.g., the name of the staking pool), making it common across all operations:
 
 ```Rust
-解释
 pub fn stake_tokens(ctx: Context<StakeTokens>, amount: u64) -> ProgramResult {
     // Logic to stake tokens
     Ok(())
@@ -1281,7 +1218,6 @@ pub struct WithdrawRewards<'info> {
     rewards_pool: AccountInfo<'info>,
     // Other rewards withdrawal-related accounts
 }
-Copy
 ```
 
 This is problematic as the staking and rewards withdrawal functionalities rely on the same PDA derived from **staking_pool_pda**. This could allow users to manipulate the contract into unauthorized reward withdrawal or staking manipulation.
@@ -1291,7 +1227,6 @@ This is problematic as the staking and rewards withdrawal functionalities rely o
 To mitigate against this vulnerability, use distinct PDAs for different functionalities. Ensure that each PDA serves a specific context and is derived using unique, operation-specific seeds:
 
 ```Rust
-解释
 pub fn stake_tokens(ctx: Context<StakeTokens>, amount: u64) -> ProgramResult {
     // Logic to stake tokens
     Ok(())
@@ -1323,7 +1258,6 @@ pub struct WithdrawRewards<'info> {
     rewards_pool: AccountInfo<'info>,
     // Other rewards withdrawal-related accounts
 }
-Copy
 ```
 
 In the example above, the PDAs for staking tokens and withdrawing rewards are derived using distinct seeds (**staking_pool** and **rewards_pool**, respectively) combined with the specific account's key. This ensures that the PDAs are uniquely tied to their intended functionalities, mitigating the risk of unauthorized actions.
@@ -1339,7 +1273,6 @@ In the example above, the PDAs for staking tokens and withdrawing rewards are de
 Consider a rewards program that uses **ctx.remaining_accounts** to receive user PDAs and calculate rewards dynamically:
 
 ```Rust
-解释
 pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
     let rewards_account = &ctx.accounts.rewards_account;
     let authority = &ctx.accounts.authority;
@@ -1366,7 +1299,6 @@ pub struct RewardsAccount {
     pub total_rewards: u64,
     // Other relevant fields
 }
-Copy
 ```
 
 The issue here is that there aren’t any explicit checks to validate the accounts passed in via **ctx.remaining_accounts**, meaning it fails to ensure that only valid and eligible users’ accounts are processed in the rewards calculation and distribution. 
@@ -1430,7 +1362,6 @@ This is problematic when PDAs are used within a program for different purposes, 
 Consider a program for a decentralized voting platform for various proposals and initiatives. Each voting session for a given proposal or initiative is created with a unique identifier, and users submit votes. The program uses PDAs for both voting sessions and individual votes:
 
 ```Rust
-解释
 // Creating a Voting Session PDA
 #[derive(Accounts)]
 #[instruction(session_id: String)]
@@ -1462,7 +1393,6 @@ pub struct SubmitVote<'info> {
     pub vote: Account<'info, Vote>,
     pub system_program: Program<'info, System>,
 }
-Copy
 ```
 
 In this scenario, an attacker would try to carefully craft a voting session that, when combined with the static seed **"session"**, would result in a PDA that coincidentally matches the PDA generated for a different voting session. 
@@ -1489,7 +1419,6 @@ Consider a program that manages access to admin operations based on a user's rol
 However, the program fails to check the account's discriminator and deserializes user account data without confirming whether the account is an administrator:
 
 ```Rust
-解释
 pub fn update_admin_settings(ctx: Context<UpdateSettings>) -> ProgramResult {
     // Deserialize without checking the discriminator
     let user = User::try_from_slice(&ctx.accounts.user.data.borrow()).unwrap();
@@ -1509,7 +1438,6 @@ pub struct UpdateSettings<'info> {
 pub struct User {
     authority: Pubkey,
 }
-Copy
 ```
 
 The issue is that **update_admin_settings** deserializes the user account passed in without checking the account's role discriminator, partly because the **User** struct is missing a discriminator field!
@@ -1519,7 +1447,6 @@ The issue is that **update_admin_settings** deserializes the user account passed
 To mitigate against this issue, developers can introduce a discriminator field in the **User** struct and verify it during the deserialization process:
 
 ```Rust
-解释
 pub fn update_admin_settings(ctx: Context<UpdateSettings>) -> ProgramResult {
     let user = User::try_from_slice(&ctx.accounts.user.data.borrow()).unwrap();
 
@@ -1550,7 +1477,6 @@ pub enum AccountDiscriminant {
     Admin,
     // Other account types
 }
-Copy
 ```
 
 Anchor simplifies the mitigation of type cosplay vulnerabilities by automatically managing discriminators for account times. This is done via the **Account<'info, T>** wrapper, where Anchor ensures type safety by automatically checking the discriminator during deserialization. This allows developers to focus more on their program's business logic rather than manually implementing various type checks.
