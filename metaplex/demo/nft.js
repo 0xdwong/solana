@@ -25,6 +25,9 @@ async function init() {
     const cluster = process.env.Solana_Cluster || 'devnet'; // or mainnet-beta | testnet
     const connection = new Connection(clusterApiUrl(cluster));
     let metaplex = new Metaplex(connection);
+    metaplex.use(
+        bundlrStorage()
+    );
     return metaplex;
 }
 
@@ -36,11 +39,12 @@ async function createCollection() {
     metaplex.use(keypairIdentity(signer));
 
     const { nft } = await metaplex.nfts().create({
-        uri: "https://arweave.net/IiKAazQfKN3tYZIRhlEPLxV7whvcYrJ7Q_iOGlhKAVA", // 集合元数据
-        name: "My NFT",
-        symbol: "MYNFT",
+        uri: "https://arweave.net/VpKjuFVYsBCfuej1LU2iuN_u9SN9G4bUTwXGfFjYUSk", // 集合元数据
+        name: "My NFT2",
+        symbol: "MYNFT2",
         sellerFeeBasisPoints: 0, // 二次销售版税，默认为250(5%)
         isCollection: true, //是否集合
+        isMutable: false,
     },
         { commitment: "finalized" }
     );
@@ -56,13 +60,13 @@ async function mint() {
     // 连接 Signer
     metaplex.use(keypairIdentity(signer));
 
-    const collectionAddr = ''; // NFT 集合地址
-    const receiver = ''; // 接收者地址
+    const collectionAddr = '2icQXcbZjA19PjrkoyaWLbyXvzpjQkBYDSgHF9vFaS2d'; // NFT 集合地址
+    const receiver = 'GSSZb19uq1UKDuWBxsUF5VEbWGEo7NMuBqfeHtyFCp93'; // 接收者地址
 
     const { nft } = await metaplex.nfts().create({
-        uri: "https://arweave.net/nJiWU0MEM4axyuN5Pa7wvNF63xFDqOWatFA1HqlCuCw",//NFT元数据
-        name: "My NFT",
-        symbol: "MYNFT",
+        uri: "https://arweave.net/VpKjuFVYsBCfuej1LU2iuN_u9SN9G4bUTwXGfFjYUSk",//NFT元数据
+        name: "My NFT2",
+        symbol: "MYNFT2",
         tokenOwner: new PublicKey(receiver),
         sellerFeeBasisPoints: 0, // 二次销售版税，默认为250(5%)
         collection: new PublicKey(collectionAddr),
@@ -130,15 +134,8 @@ async function uploadFile() {
     const signer = getSignerPrivateKey(process.env.privateKey);
     metaplex
         .use(keypairIdentity(signer))
-        .use(
-            bundlrStorage({
-                address: "https://devnet.bundlr.network",
-                providerUrl: "https://api.devnet.solana.com",
-                timeout: 60000,
-            })
-        );
 
-    const imageFile = 'mynft.png';
+    const imageFile = 'mynft0.jpg';
     // 将文件读取为缓冲区
     const buffer = fs.readFileSync(imageFile)
     // 将缓冲区转换为 Metaplex 文件
@@ -154,18 +151,12 @@ async function uploadMetadata() {
     const signer = getSignerPrivateKey(process.env.privateKey);
     metaplex
         .use(keypairIdentity(signer))
-        .use(
-            bundlrStorage({
-                address: "https://devnet.bundlr.network",
-                timeout: 60000,
-            })
-        );
 
     const { uri } = await metaplex.nfts().uploadMetadata({
-        "name": "My NFT#1",
-        "symbol": "MYNFT",
-        "description": "My NFT create by Metaplex",
-        "image": "https://arweave.net/uMEl7Ps5PNzY7T6V0F6lg3Q36CZSXeOjdPM2WXTAfio",
+        "name": "My NFT#2",
+        "symbol": "MYNFT2",
+        "description": "My NFT2 create by Metaplex",
+        "image": "https://arweave.net/Y-0cMfWiroeG_LKsJxdhd6tkVDmuTP6pM27rlZw1N-4",
         "attributes": {
             "level": 1,
             "rare": false
@@ -183,7 +174,7 @@ async function main() {
     // await burn();
     // await freeze();
     // await verifyCollection();
-    // await uploadFile();
+    await uploadFile();
     // await uploadMetadata();
 }
 
