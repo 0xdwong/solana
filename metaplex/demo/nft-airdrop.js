@@ -9,11 +9,13 @@ let signer, metaplex, collectionAddr;
 async function init() {
     const cluster = process.env.Solana_Cluster || 'devnet'; // or mainnet-beta | testnet
     const connection = new Connection(clusterApiUrl(cluster));
+
     let metaplex = new Metaplex(connection);
     return metaplex;
 }
 
 async function mint(receiver, nftData) {
+    console.log('====mint====', new Date(), receiver)
     const { nft } = await metaplex.nfts().create({
         uri: nftData.uri, //NFT元数据
         name: nftData.name,
@@ -37,30 +39,42 @@ async function main() {
     // 连接 Signer
     metaplex.use(keypairIdentity(signer));
 
-    collectionAddr = 'HHh7Wz9k2psfQbH7zi5nG7fxuZRowMgT3dY1vuc6aEeV'; // change
+    collectionAddr = ''; // NFT collection address
     const nftData = {
-        uri: "https://arweave.net/VpKjuFVYsBCfuej1LU2iuN_u9SN9G4bUTwXGfFjYUSk", // 集合元数据
-        name: "My NFT2",
-        symbol: "MYNFT2",
+        "uri": "", // NFT collection metadata
+        "name": "",
+        "symbol": "",
     }
+    // add receivers
+    const receivers = [
 
-    let receivers = [
-        // "9nykjZtZcUr4N191X1Lmazpdu1N6qPCHHLRZrMe2uBdK",
-        // "HUXKkKQFk5zoqHFpPgXD8KzwBbHbCnfoQmbN4dYxabP2",
-        // "CSWniu2CWyVcDXmQ4TcbcjnKWdNs62vaz1pH1ENc9ksh",
-        // "5aVux463qnEjaGXLVtmDeg1EMqCtBobkj9DUYzxZfhSX",
-        // "HTU7hJMrjjhqEva7zzkNJbbbaGPqEXiiVKGdHgfq5j2X",
-        // "33Y5GT3z279Un75WWnHewXfXuiQA22qELCkSdEzHZFSP",
     ];
 
+
+    let succeeds = [];
+    let faileds = []
+
     for (let receiver of receivers) {
-        await mint(receiver, nftData);
+        try {
+            await mint(receiver, nftData);
+            succeeds.push(receiver);
+        } catch (err) {
+            faileds.push(receiver);
+            console.error(`airdrop to ${receiver} failed`, err.message);
+        }
     }
 
+    if (succeeds.length > 0) {
+        console.log('airdrop succeed receivers:', succeeds);
+    }
+
+    if (faileds.length > 0) {
+        console.log('airdrop failed receivers:', faileds);
+    }
 }
 
 main().then(() => {
-    console.log('succeed');
+    console.log('airdrop finished');
     process.exit(0)
 }).catch(err => {
     console.error(err);
