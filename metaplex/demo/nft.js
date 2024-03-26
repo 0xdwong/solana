@@ -1,30 +1,16 @@
 import { Metaplex, keypairIdentity, toMetaplexFile, bundlrStorage } from '@metaplex-foundation/js';
 import { Connection, clusterApiUrl, Keypair, PublicKey } from '@solana/web3.js';
-import bs58 from 'bs58';
-import ed25519 from "ed25519-hd-key";
-import bip39 from "bip39";
-import * as fs from "fs"
 import dotenv from "dotenv"
 dotenv.config();
 
-
-function getSignerPrivateKey(privateKey) {
-    const signer = Keypair.fromSecretKey(bs58.decode(privateKey));
-    return signer;
-}
-
-function getSignerFromMnemonic(mnemonic) {
-    const seed = bip39.mnemonicToSeedSync(mnemonic, ""); // (mnemonic, password)
-    const derivePath = "m/44'/501'/0'/0'"
-    const derivedSeed = ed25519.derivePath(derivePath, seed.toString('hex')).key
-    const signer = Keypair.fromSeed(derivedSeed);
-    return signer;
-}
 
 async function init() {
     const cluster = process.env.Solana_Cluster || 'devnet'; // or mainnet-beta | testnet
     const connection = new Connection(clusterApiUrl(cluster));
     let metaplex = new Metaplex(connection);
+    metaplex.use(
+        bundlrStorage()
+    );
     return metaplex;
 }
 
@@ -36,11 +22,12 @@ async function createCollection() {
     metaplex.use(keypairIdentity(signer));
 
     const { nft } = await metaplex.nfts().create({
-        uri: "https://arweave.net/IiKAazQfKN3tYZIRhlEPLxV7whvcYrJ7Q_iOGlhKAVA", // 集合元数据
+        uri: "https://arweave.net/VpKjuFVYsBCfuej1LU2iuN_u9SN9G4bUTwXGfFjYUSk", // 集合元数据
         name: "My NFT",
         symbol: "MYNFT",
         sellerFeeBasisPoints: 0, // 二次销售版税，默认为250(5%)
         isCollection: true, //是否集合
+        isMutable: false,
     },
         { commitment: "finalized" }
     );
@@ -60,7 +47,7 @@ async function mint() {
     const receiver = ''; // 接收者地址
 
     const { nft } = await metaplex.nfts().create({
-        uri: "https://arweave.net/nJiWU0MEM4axyuN5Pa7wvNF63xFDqOWatFA1HqlCuCw",//NFT元数据
+        uri: "https://arweave.net/VpKjuFVYsBCfuej1LU2iuN_u9SN9G4bUTwXGfFjYUSk",//NFT元数据
         name: "My NFT",
         symbol: "MYNFT",
         tokenOwner: new PublicKey(receiver),
@@ -130,15 +117,8 @@ async function uploadFile() {
     const signer = getSignerPrivateKey(process.env.privateKey);
     metaplex
         .use(keypairIdentity(signer))
-        .use(
-            bundlrStorage({
-                address: "https://devnet.bundlr.network",
-                providerUrl: "https://api.devnet.solana.com",
-                timeout: 60000,
-            })
-        );
 
-    const imageFile = 'mynft.png';
+    const imageFile = 'mynft0.jpg';
     // 将文件读取为缓冲区
     const buffer = fs.readFileSync(imageFile)
     // 将缓冲区转换为 Metaplex 文件
@@ -154,18 +134,26 @@ async function uploadMetadata() {
     const signer = getSignerPrivateKey(process.env.privateKey);
     metaplex
         .use(keypairIdentity(signer))
-        .use(
-            bundlrStorage({
-                address: "https://devnet.bundlr.network",
-                timeout: 60000,
-            })
-        );
+    // .use(
+    //     bundlrStorage({
+    //         address: 'https://devnet.irys.xyz',
+    //         providerUrl: "https://api.devnet.solana.com",
+    //         timeout: 60000,
+    //     })
+    // );
+
+
+    const image = "https://arweave.net/Y-0cMfWiroeG_LKsJxdhd6tkVDmuTP6pM27rlZw1N-4";
+    // 或者从文件中读取
+    // const imageFile = 'your-nft-path.png';
+    // const buffer = fs.readFileSync(imageFile)
+    // const file = toMetaplexFile(buffer, imageFile)
 
     const { uri } = await metaplex.nfts().uploadMetadata({
-        "name": "My NFT#1",
+        "name": "My NFT",
         "symbol": "MYNFT",
         "description": "My NFT create by Metaplex",
-        "image": "https://arweave.net/uMEl7Ps5PNzY7T6V0F6lg3Q36CZSXeOjdPM2WXTAfio",
+        "image": image,
         "attributes": {
             "level": 1,
             "rare": false
