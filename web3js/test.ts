@@ -4,8 +4,14 @@ import * as helpers from "./helpers"
 
 
 async function main() {
-    let result = await helpers.getTokenAccountBalance('D9cSbavNnVA6VhuswpbcTDMgsvqPwg1xHLaSeAJz4YAU');
-    
+    let result;
+
+    // ata balance
+    result = await helpers.getTokenAccountBalance('');
+
+    // someone's token balance
+    result = await helpers.getTokenBalance('', '');
+
     console.log('==result==', result);
 }
 
