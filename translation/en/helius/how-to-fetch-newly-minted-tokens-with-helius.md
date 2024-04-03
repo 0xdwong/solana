@@ -28,7 +28,7 @@ To learn more about Token-2022, refer to this [article](https://www.helius.dev/b
 Solana's Token Program allows us to create mint accounts and token accounts. Mint accounts contain global information about a token, while token accounts store the relationship between a wallet and a mint account. You can create tokens using the following [code or the spl-token-cli](https://spl.solana.com/token#reference-guide). For example, run this command in the command line to create a fungible token, provided [spl-token-cli](https://spl.solana.com/token#setup) is installed:
 
 ```bash
-spl-token create-tokenCopy
+spl-token create-token
 ```
 
 ### **Token Metadata Program**
@@ -53,14 +53,14 @@ This ensures that no one can bypass the Token Metadata program by interacting wi
 To monitor newly minted Tokens, we’ll set up a [webhook](https://docs.helius.dev/webhooks-and-websockets/what-are-webhooks). Webhooks allow you to listen to on-chain events and trigger specific actions when these events occur. We’ll configure our webhook to listen to the **TOKEN_MINT** transaction type from the [Token Metadata Program](https://developers.metaplex.com/token-metadata). The sources currently supported for this transaction type are (other sources will be tagged as **“UNKNOWN”**): 
 
 ```javascript
- "TOKEN_MINT": [   "CANDY_MACHINE_V1",   "ATADIA",   "SOLANA_PROGRAM_LIBRARY" ]Copy
+ "TOKEN_MINT": [   "CANDY_MACHINE_V1",   "ATADIA",   "SOLANA_PROGRAM_LIBRARY" ]
 ```
 
 Webhooks can be created using the [Helius Dashboard](https://dev.helius.xyz/dashboard/app), or be coded using [the API reference](https://dev.helius.xyz/dashboard/app). To create one via the [Dashboard](https://dev.helius.xyz/), go to the **Webhooks** section in the left panel and click **New Webhook**. Then, configure the webhook by providing details such as:
 
 1. **Network:** Mainnet/Devnet
 2. **Webhook Type**: You can select either Enhanced/Raw/Discord. If you choose Discord, you must submit the Webhook URL, and your notification will be formatted and sent directly by the bot. You can refer to the steps to get the Webhook URL for a Discord bot [here](https://dev.helius.xyz/). If you select Raw, you won’t be able to specify the transaction type. 
-3. **Transaction Type:** Select **TOKEN_MINT** to listen to newly minted tokens*.* You can find other transaction types supported by a Program [here](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks). 
+3. **Transaction Type:** Select **TOKEN_MINT** to listen to newly minted tokens.You can find other transaction types supported by a Program [here](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks). 
 4. **Webhook URL:** Add the endpoint that will listen to the notifications (e.g., Discord Bot, Website, etc.) 
 5. **Authentication Header:** Enter an authentication header to pass the POST requests to your webhook. Note that this is optional.
 6. **Account Address:** Add Token Metadata Program Address here: **metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s**. For other cases, you can add more than one account address if required. You can include their address if you wish to hear from a particular user in the transaction.
@@ -107,7 +107,7 @@ const getAsset = async () => {
   const { result } = await response.json();
   console.log("Asset: ", result);
 };
-getAsset();Copy
+getAsset();
 ```
 
 You can find more examples and a complete schema for the request and response of this method in our [documentation](https://docs.helius.dev/compression-and-das-api/digital-asset-standard-das-api/get-asset).

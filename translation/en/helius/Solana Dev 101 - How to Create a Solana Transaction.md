@@ -18,7 +18,6 @@ We are also going to need to install the Solana web3.js library, which is a suit
 
 ```shell
 npm install @solana/web3.js
-Copy
 ```
 
 ‍
@@ -30,7 +29,6 @@ First, let's create a connection to the Solana cluster. We will be using Helius 
 ```javascript
 const solanaWeb3 = require('@solana/web3.js');
 const connection = new solanaWeb3.Connection('<https://rpc-devnet.helius.xyz/?api-key=><api_key>','confirmed',);
-Copy
 ```
 
 ## **Step 2: Creating a New Wallet**
@@ -39,7 +37,6 @@ Now we need a wallet to send transactions from. A wallet is just a pair of publi
 
 ```shell
 solana-keygen new
-Copy
 ```
 
 If you do not the you will need to install the Solana CLI Tool Suite. You can get more information  on how to do this in the Solana docs here: https://docs.solana.com/cli/install-solana-cli-tools
@@ -50,7 +47,6 @@ We can then pull this wallet into our code:
 
 ```javascript
 const sender=solanaWeb3.Keypair.fromSecretKey(new Uint8Array([61,23,....,60,49]));
-Copy
 ```
 
 You can copy your secret key from the json file system wallet that you created in the previous step and use that.
@@ -73,7 +69,6 @@ const receiver = new solanaWeb3.PublicKey("86xCnPeV69n6t3DnyGvkKobf9FdN2H9oiVDda
 const transaction = new solanaWeb3.Transaction().add(solanaWeb3.SystemProgram.transfer({
 fromPubkey: sender.publicKey,toPubkey: receiver,
 lamports: solanaWeb3.LAMPORTS_PER_SOL * 0.01,}),);
-Copy
 ```
 
 ‍
@@ -92,7 +87,6 @@ Once the transaction has been created we will need to sign that transaction and 
 // Sign and confirm the transaction      
 const signature = await solanaWeb3.sendAndConfirmTransaction(connection,transaction,[sender],);      
 console.log('Transaction: ', signature);
-Copy
 ```
 
 The sendAndConfrimTransaction method takes three parameters:

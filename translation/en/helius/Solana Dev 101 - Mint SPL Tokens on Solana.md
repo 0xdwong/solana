@@ -18,28 +18,24 @@ First we need a few programs installed on our workstation to begin minting the t
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-Copy
 ```
 
 2. Install Solana CLI:
 
 ```shell
 cargo install solana-cli
-Copy
 ```
 
 After this is installed you can verify that you have Solana CLI installed by running the following:
 
 ```shell
 solana --version
-Copy
 ```
 
 Which should return a similar result to below:
 
 ```shell
 solana-cli 1.15.2 (src:dea65f48; feat:1211687720, client:SolanaLabs)
-Copy
 ```
 
 *Note: This may return differently depending on when installed. If you are getting an error during install, please re-attempt the download and it should resolve.* 
@@ -69,7 +65,6 @@ Once we have our RPC, we can set it to our environment by using the following co
 
 ```shell
 solana config set --url https://api.devnet.solana.com
-Copy
 ```
 
 This will set our default network to **Devnet** on the CLI for our test. You should see the following in your console:
@@ -81,7 +76,6 @@ RPC URL: https://api.devnet.solana.com
 WebSocket URL: wss://api.devnet.solana.com/ (computed)
 Keypair Path: ./RwUUVWjmSycerjAFep7v9d1R1sioF45cYAUpeJtcQbZ.json 
 Commitment: confirmed
-Copy
 ```
 
 Once you see this confirmation, we can move onto the next step.
@@ -95,7 +89,6 @@ To create a new wallet run the following:
 ```shell
 solana-keygen new -o ${HOME}/token-wallet.json
 
-Copy
 ```
 
 *Note: You can replace “*token-wallet” *with the preferred name of your file here.* 
@@ -113,7 +106,6 @@ pubkey: EbcgsUzSEgiZm61Ch66hKUWhoUg3DGvDaqwQBMLaBgTg
 Save this seed phrase and your BIP39 passphrase to recover your new keypair:
 switch anchor code opera purpose easy squeeze enough steal pelican enroll switch
 ====================================================================================
-Copy
 ```
 
 *Please save the seed phrase set here so you could import to a trusted wallet app if needed.* 
@@ -123,7 +115,6 @@ Now we can set this wallet as our default address by running the following:
 ```shell
 solana config set --keypair ${HOME}/token-wallet.json
 
-Copy
 ```
 
 You can now run the following to make sure the public key is set correctly.
@@ -131,7 +122,6 @@ You can now run the following to make sure the public key is set correctly.
 ```shell
 solana address
 
-Copy
 ```
 
 Which in our case provides:
@@ -139,7 +129,6 @@ Which in our case provides:
 ```shell
 EbcgsUzSEgiZm61Ch66hKUWhoUg3DGvDaqwQBMLaBgTg
 
-Copy
 ```
 
 Now that we have our default wallet set, we can move on to requesting funds for our test.
@@ -153,7 +142,6 @@ We can run the following command in our terminal to get the required amount:
 ```shell
 solana airdrop 2
 
-Copy
 ```
 
 Now we can check the balance of our wallet by running the following:
@@ -161,7 +149,6 @@ Now we can check the balance of our wallet by running the following:
 ```shell
 solana balance
 
-Copy
 ```
 
 This should return **2 SOL** in the console.
@@ -203,7 +190,6 @@ Run the following command to create the token:
 ```shell
 spl-token create-token
 
-Copy
 ```
 
 *Note: Decimals are the smallest denomination for a token. For instance, Solana’s token is set to 9 decimals. Where it’s smallest denomination is called a* ***lamport\****. You can run spl-token create-token --decimals 0 to create a non-fungible token. Example: WL Token.* 
@@ -218,7 +204,6 @@ Address:  Ax3nE7fAEuZsbN9HHEpuBpoYeYy7NZ3dgjRG8GXdFqto
 Decimals:  9
 
 Signature: 56pRzvMBxJQqti4Fh5wPsa5Hb7KzJaWzEFNcAFYPaH7vN7a2CBmM1wbYxTvNVZr9Cvupy25X2oHtrGhhEhww9ug5
-Copy
 ```
 
 ### 2. Create Token Account
@@ -230,7 +215,6 @@ We can set up the account for our **Ax3nE7fAEuZsbN9HHEpuBpoYeYy7NZ3dgjRG8GXdFqto
 ```shell
 spl-token create-account Ax3nE7fAEuZsbN9HHEpuBpoYeYy7NZ3dgjRG8GXdFqto
 
-Copy
 ```
 
 This is creating an account to house the **Ax3nE7fAEuZsbN9HHEpuBpoYeYy7NZ3dgjRG8GXdFqto** token and should produce the following result: 
@@ -239,7 +223,6 @@ This is creating an account to house the **Ax3nE7fAEuZsbN9HHEpuBpoYeYy7NZ3dgjRG8
 Creating account 7jZDrZqRkVzu5ADtKvNGsTyPcCpcMVkxorMRJvCaUAD
 
 Signature: EkR353vt9ST3ktyRsCRtYFqVvARaUBmUpWLfgFtsojBRbW66dK1yaCpW1NtphCQTkcGqzVQZg4Ld2abZ3bhsjA3
-Copy
 ```
 
 We now have a token account to start minting!
@@ -253,7 +236,6 @@ We can do this by running the following command, with our token address followin
 ```shell
 spl-token mint Ax3nE7fAEuZsbN9HHEpuBpoYeYy7NZ3dgjRG8GXdFqto 1000000
 
-Copy
 ```
 
 This will produce the following in our terminal:
@@ -265,7 +247,6 @@ Minting 1000000 tokens
   Recipient: 7jZDrZqRkVzu5ADtKvNGsTyPcCpcMVkxorMRJvCaUAD
 
 Signature: 4EjB9bDC18Cut66frGWVHAxVQ3YrddaUCQcFZZsXbKXLziCAUtdh5r41tVhvP7yH1dZ5TBUaFXHpm2upaNCw3sMe
-Copy
 ```
 
 We can now run the following command to verify that these were minted:
@@ -273,14 +254,12 @@ We can now run the following command to verify that these were minted:
 ```shell
 spl-token supply Ax3nE7fAEuZsbN9HHEpuBpoYeYy7NZ3dgjRG8GXdFqto
 
-Copy
 ```
 
 Which will return:
 
 ```shell
 1000000
-Copy
 ```
 
 Now, we have minted 1 million tokens on Solana using Solana CLI.
@@ -299,7 +278,6 @@ If you care to check the balance of your Solana wallet after minting 1,000,000 t
 
 ```shell
 solana balance
-Copy
 ```
 
 Which will return this if you started with the initial 2 SOL drop:
@@ -307,7 +285,6 @@ Which will return this if you started with the initial 2 SOL drop:
 ```shell
 1.99647912 SOL
 
-Copy
 ```
 
 And that’s it! Solana makes it possible to scale the token supply and have it at a fractional cost. If you followed these steps you can now effectively make a token using the Solana CLI **spl-token** tool.

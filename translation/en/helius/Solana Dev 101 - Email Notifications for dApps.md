@@ -52,7 +52,6 @@ To install the dependencies, simply enter:
 
 ```shell
 npm install nodemailer express body-parser
-Copy
 ```
 
 ‍
@@ -68,7 +67,6 @@ const express = require('express'),
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-Copy
 ```
 
 ‍
@@ -131,7 +129,6 @@ app.post("/webhooks", async (req, res) => {
 };
 
 app.listen(3000);
-Copy
 ```
 
 ‍
@@ -206,7 +203,6 @@ Here is a JSON file of the data we received from Helius’s webhook:
     type: 'NFT_SALE'
   }
 ]
-Copy
 ```
 
 ‍
@@ -230,7 +226,6 @@ const transporter = nodemailer.createTransport({
     pass: `${process.env['email_password']}`
   }
 });
-Copy
 ```
 
 We can now code the actual sending of the email, using the express endpoint we set up before to receive the requests. We first create an object containing all the relevant info that nodemailer needs to send the email, e.g a sender, a receiver, a subject (not necessary), and the body. This is where we will be inserting the actual transaction data by referencing the body object we received from Helius’s webhooks - using the test data from before, we can determine how to access the description property.
@@ -254,7 +249,6 @@ app.post("/webhooks", async (req, res) => {
     }
   })
 });
-Copy
 ```
 
 ‍
@@ -298,7 +292,6 @@ app.post("/webhooks", async (req, res) => {
 });
 
 app.listen(3000);
-Copy
 ```
 
 ‍

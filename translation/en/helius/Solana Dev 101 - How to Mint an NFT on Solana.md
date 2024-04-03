@@ -16,7 +16,6 @@ First, we need to install the necessary dependencies. Run the following commands
 
 ```shell
 npm install @solana/web3.js @metaplex-foundation/js
-Copy
 ```
 
 ## **Step 2: Importing Dependencies**
@@ -27,7 +26,6 @@ Next, we can create a new file called mintNFTs.js and we can start off by import
 const { Keypair, Connection } = require('@solana/web3.js');
 const { Metaplex,keypairIdentity, bundlrStorage,toMetaplexFile } = require('@metaplex-foundation/js');
 const {fs} = require('fs');
-Copy
 ```
 
 ## **Step 3: Create a Wallet , Initialise a Connection, and Create a Metaplex Instance**
@@ -38,7 +36,6 @@ We need to create a Solana wallet which will be used to mint and hold the NFT. T
 
 ```shell
 solana-keygen new
-Copy
 ```
 
 ‍
@@ -70,7 +67,6 @@ We will then create a wallet key pair from the seed phrase of the wallet that we
   });
   return metadataURI;
 }
-Copy
 ```
 
 In the above code we create an instance of the Metaplex SDK, a toolkit for interacting with the Metaplex protocol. We then configure the instance with a connection to a Solana cluster, the user's wallet, and a storage provider. **.use(bundlrStorage())** configures the instance to use Bundlr as the storage provider, which is where the metadata and assets of the NFTs will be stored.
@@ -108,7 +104,6 @@ After the metadata is successfully uploaded the function will return the URI of 
   });
   return metadataURI;
 }
-Copy
 ```
 
 ## **Step 5: Minting the NFT**
@@ -134,7 +129,6 @@ Now we move forward with minting the NFT by creating a function called **createN
 }
 createNFT();
 
-Copy
 ```
 
 Running this code with "**node mintNFT.js**" created the NFT that can be seen [**here**](https://xray.helius.xyz/token/7BwvG5tjbCJ7vvCes5tAEovsurvP1Mk8sTbotnJn2d6v).
