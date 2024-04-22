@@ -94,7 +94,7 @@ TPU 在五个不同的阶段处理交易：
 
 ### 过时/不正确的区块哈希
 
-每个交易都有一个作为[历史证明](https://www.helius.dev/blog/proof-of-history-proof-of-stake-proof-of-work-explained#what%E2%80%99s-proof-of-history)（PoH）时钟时间戳的“最近 区块哈希”。这个区块哈希帮助验证者避免处理相同的交易两次，并跟踪交易何时以及以何种顺序被处理。验证者将由于无效的区块哈希在处理过程中拒绝交易。
+每个交易都有一个作为[历史证明](https://www.helius.dev/blog/proof-of-history-proof-of-stake-proof-of-work-explained#what%E2%80%99s-proof-of-history)（PoH）时钟时间戳的“最近区块哈希”。这个区块哈希帮助验证者避免处理相同的交易两次，并跟踪交易何时以及以何种顺序被处理。验证者将由于无效的区块哈希在处理过程中拒绝交易。
 
 *   **区块哈希过期**
 
