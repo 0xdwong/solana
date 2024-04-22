@@ -8,28 +8,28 @@ Solana 最近经历了前所未有的交易量，导致高比例的交易失败�
 
 *   所有它打算从中读取或写入的账户数组
 *   一个或多个指令（即，最小执行单元）
-*   一个最近的 blockhash
+*   一个最近的区块哈希
 *   一个或多个签名
 
 运行时将按顺序原子地处理交易中包含的每个指令。如果指令的任何部分失败，整个交易将失败。
 
 ‍
 
-_什么是 Blockhash？_
+_什么是区块哈希？_
 
-_"blockhash"是一个_ [_slot_](https://solana.com/docs/terminology#slot) _的最新历史证明（PoH）哈希。由于 Solana 依赖于_ [_PoH_](https://solana.com/news/proof-of-history) _作为可信时钟，一个交易的_ **_recent blockhash_** _可以被视为时间戳。Blockhash 可以防止重复并为交易提供生命周期。如果一个交易的 blockhash 太旧，它将被拒绝。最大的 blockhash 年龄为 150 个块或约 1 分钟 19 秒。_
+_"区块哈希"是一个_ [_slot_](https://solana.com/docs/terminology#slot) _的最新历史证明（PoH）哈希。由于 Solana 依赖于_ [_PoH_](https://solana.com/news/proof-of-history) _作为可信时钟，一个交易的_ **_recent blockhash_** _可以被视为时间戳。区块哈希可以防止重复并为交易提供生命周期。如果一个交易的区块哈希太旧，它将被拒绝。最大的区块哈希年龄为 150 个块或约 1 分钟 19 秒。_
 
 ### 交易如何提交？
 
 Solana 由一组[验证者](https://solana.com/docs/terminology#validator)维护，他们验证添加到[账本](https://solana.com/docs/terminology#ledger)的交易。从这组中选择一个领导验证者来将条目附加到账本。账本上的条目可以是一个 [tick](https://solana.com/docs/terminology#tick) 或一个[交易条目](https://solana.com/docs/terminology#transactions-entry) 。账本保存了一个包含客户端签名的交易条目列表。 [创世块](https://solana.com/docs/terminology#genesis-block)在概念上追溯到账本。但实际验证者的账本可能只有更新的块，以减少存储，因为在设计上旧块不需要用来验证未来的块。
 
-领导验证者每个 [slot](https://solana.com/docs/terminology#slot) 只能生成一个 [block](https://solana.com/docs/terminology#block)，blockhash 是用于标识每个块的唯一标识符。它是一个块的所有条目的哈希，包括上一个块的哈希。 [领导计划](https://solana.com/docs/terminology#leader-schedule)在每个纪元之前确定，通常在大约两天之前，以决定哪个验证者将在任何给定时间充当当前领导者。当发起交易时，它将被转发给当前和下一个领导验证者。
+领导验证者每个 [slot](https://solana.com/docs/terminology#slot) 只能生成一个 [block](https://solana.com/docs/terminology#block)，区块哈希是用于标识每个块的唯一标识符。它是一个块的所有条目的哈希，包括上一个块的哈希。 [领导计划](https://solana.com/docs/terminology#leader-schedule)在每个纪元之前确定，通常在大约两天之前，以决定哪个验证者将在任何给定时间充当当前领导者。当发起交易时，它将被转发给当前和下一个领导验证者。
 
 ‍
 
 交易可以通过以下方式提交给领导者：
 
-1.  **RPC 服务器**：交易可以通过 RPC 提供者通过 [sendTransaction](https://solana.com/docs/rpc/http/sendtransaction) JSON-RPC 方法提交。接收的 RPC 节点将尝试将其作为 [UDP 数据包](https://www.helius.dev/blog/all-you-need-to-know-about-solana-and-quic#what%E2%80%99s-udp)每两秒发送给当前和下一个领导者，直到交易完成或交易的 blockhash 过期（在 150 个块或约 1 分钟 19 秒后）。在此之前，只有客户端和中继 RPC 节点知道该交易记录。
+1.  **RPC 服务器**：交易可以通过 RPC 提供者通过 [sendTransaction](https://solana.com/docs/rpc/http/sendtransaction) JSON-RPC 方法提交。接收的 RPC 节点将尝试将其作为 [UDP 数据包](https://www.helius.dev/blog/all-you-need-to-know-about-solana-and-quic#what%E2%80%99s-udp)每两秒发送给当前和下一个领导者，直到交易完成或交易的区块哈希过期（在 150 个块或约 1 分钟 19 秒后）。在此之前，只有客户端和中继 RPC 节点知道该交易记录。
 2.  **TPU 客户端**：[TPU 客户端](https://crates.io/crates/solana-tpu-client/1.17.28)只需提交交易。客户端软件需要处理重新广播和领导者转发。
 
 ‍
@@ -39,7 +39,7 @@ Solana 由一组[验证者](https://solana.com/docs/terminology#validator)维护
 1.  **encoding:** 用于交易数据的编码为 base58 或 base64。
 2.  **skipPreflight:** Preflight 检查包括验证交易签名并根据预先提交的 bank slot 模拟交易。如果 Preflight 检查失败，将返回错误。此功能的默认设置为**false**，表示不跳过 Preflight 检查。
 3.  **preflightCommitment:** 它指定在执行 Preflight 检查时使用的[承诺级别](https://docs.solanalabs.com/consensus/commitments) 。承诺级别默认设置为 **finalized**，但可以通过指定字符串进行更改。建议指定相同的承诺和 Preflight 承诺以避免混乱的行为。
-4.  **maxRetries:** maxRetries 参数确定 RPC 节点需要重试将交易发送给领导者的最大次数。如果未提供此参数，RPC 节点将重试交易直到交易完成或直到 blockhash 过期。
+4.  **maxRetries:** maxRetries 参数确定 RPC 节点需要重试将交易发送给领导者的最大次数。如果未提供此参数，RPC 节点将重试交易直到交易完成或直到区块哈希过期。
 5.  **minContextSlot:** **minContextSlot** 参数指定执行 Preflight 交易检查的最小槽。 
 
 ### 交易如何处理？
@@ -68,13 +68,13 @@ TPU 在五个不同的阶段处理交易：
 
 如果你安装了 GPU，则将用于签名验证。此外，在高流量情况下，有一种处理过多数据包的逻辑，利用 IP 地址丢弃数据包。
 
-3.  **银行阶段**
+3.  **Banking 阶段**
 
-[此阶段](https://github.com/solana-labs/solana/blob/cd6f931223181d5a1d47cba64e857785a175a760/core/src/tpu.rs#L125)负责过滤和处理交易。目前，它由 6 个独立的工作线程组成，其中 2 个是投票线程，4 个是非投票线程。常规交易被添加到非投票线程。每个线程都有一个本地缓冲区，可以容纳最多 64 个不冲突的交易，存储在优先级队列中。这些交易然后并行处理，由 [Sealevel](https://medium.com/solana-labs/sealevel-parallel-processing-thousands-of-smart-contracts-d814b378192) 实现。你可以参考[此视频](https://youtu.be/R7hq8ampBio?si=GXjwTy-vz9GPYX0S)了解更多关于银行阶段的信息。
+[此阶段](https://github.com/solana-labs/solana/blob/cd6f931223181d5a1d47cba64e857785a175a760/core/src/tpu.rs#L125)负责过滤和处理交易。目前，它由 6 个独立的工作线程组成，其中 2 个是投票线程，4 个是非投票线程。常规交易被添加到非投票线程。每个线程都有一个本地缓冲区，可以容纳最多 64 个不冲突的交易，存储在优先级队列中。这些交易然后并行处理，由 [Sealevel](https://medium.com/solana-labs/sealevel-parallel-processing-thousands-of-smart-contracts-d814b378192) 实现。你可以参考[此视频](https://youtu.be/R7hq8ampBio?si=GXjwTy-vz9GPYX0S)了解更多关于 Banking 阶段的信息。
 
 4.  **历史证明服务**
 
-[PoH 服务](https://github.com/solana-labs/solana/blob/cd6f931223181d5a1d47cba64e857785a175a760/poh/src/poh_service.rs)模块记录 ticks 的传递。每个 tick 代表一个时间单位，一个 slot 中有 64 个 tick。哈希重复生成，直到从银行阶段收到记录：
+[PoH 服务](https://github.com/solana-labs/solana/blob/cd6f931223181d5a1d47cba64e857785a175a760/poh/src/poh_service.rs)模块记录 ticks 的传递。每个 tick 代表一个时间单位，一个 slot 中有 64 个 tick。哈希重复生成，直到从 Banking 阶段收到记录：
 
 **next\_hash = hash(prev\_hash, hash(transaction\_ids))**
 
@@ -92,13 +92,13 @@ TPU 在五个不同的阶段处理交易：
 
 网络层可能在领导者处理之前丢弃交易。[**UDP 数据包丢失**](https://www.baeldung.com/cs/udp-packet-loss)是可能发生这种情况的最简单原因。另一个原因与 TPU 的 **fetch 阶段**有关。当网络负载较重时，验证者可能会被需要处理的交易数量压垮。验证者可以将额外的交易转发到下一个验证者的 **tpu\_forward** 端口。然而，可以转发的数据量是有限的，每次转发在验证者之间限制为一跳。这意味着在 **tpu\_forwards** 端口接收的交易不会被转发到其他验证者。如果未处理的重播队列大小超过**10,000 笔交易**，新提交的交易将被丢弃。
 
-### 过时/不正确的 Blockhash
+### 过时/不正确的区块哈希
 
-每个交易都有一个作为[历史证明](https://www.helius.dev/blog/proof-of-history-proof-of-stake-proof-of-work-explained#what%E2%80%99s-proof-of-history)（PoH）时钟时间戳的“最近 blockhash”。这个 blockhash 帮助验证者避免处理相同的交易两次，并跟踪交易何时以及以何种顺序被处理。验证者将由于无效的 blockhash 在处理过程中拒绝交易。
+每个交易都有一个作为[历史证明](https://www.helius.dev/blog/proof-of-history-proof-of-stake-proof-of-work-explained#what%E2%80%99s-proof-of-history)（PoH）时钟时间戳的“最近 区块哈希”。这个区块哈希帮助验证者避免处理相同的交易两次，并跟踪交易何时以及以何种顺序被处理。验证者将由于无效的区块哈希在处理过程中拒绝交易。
 
-*   **Blockhash 过期**
+*   **区块哈希过期**
 
-交易的 blockhash 一旦不再被认为是足够“最近”，就会过期。为了处理交易，Solana 验证者会在一个块中搜索相应 blockhash 的 slot 号。如果验证者找不到 blockhash 的 slot 号，或者查找到的 slot 号比正在处理的块的 slot 号低**151 个 slot** 以上，交易将被拒绝。默认情况下，如果 Solana 交易在一定时间内（~_1 分钟 19 秒_）未提交到一个块中，则会过期。
+交易的区块哈希一旦不再被认为是足够“最近”，就会过期。为了处理交易，Solana 验证者会在一个块中搜索相应区块哈希的 slot 号。如果验证者找不到区块哈希的 slot 号，或者查找到的 slot 号比正在处理的块的 slot 号低**151 个 slot** 以上，交易将被拒绝。默认情况下，如果 Solana 交易在一定时间内（~_1 分钟 19 秒_）未提交到一个块中，则会过期。
 
 *   **滞后的 RPC 节点**
 
@@ -106,7 +106,7 @@ TPU 在五个不同的阶段处理交易：
 
 来源：[Solana 通过 RPC 池丢弃交易](https://solana.com/docs/core/transactions/retry#before-a-transaction-is-processed)
 
-通过 RPC 提交交易时，RPC 池可能领先于其他部分。当池内的节点需要共同工作时，可能会出现问题。例如，如果从池的高级部分查询交易的 **recentBlockhash** 并将其提交到池的滞后部分，则节点将无法识别高级 blockhash 并拒绝交易。你可以通过在 sendTransaction 上**启用预检查**来在提交交易时检测到这一点。
+通过 RPC 提交交易时，RPC 池可能领先于其他部分。当池内的节点需要共同工作时，可能会出现问题。例如，如果从池的高级部分查询交易的 **recentBlockhash** 并将其提交到池的滞后部分，则节点将无法识别高级区块哈希并拒绝交易。你可以通过在 sendTransaction 上**启用预检查**来在提交交易时检测到这一点。
 
 *   **临时网络分叉**
 
@@ -114,7 +114,7 @@ TPU 在五个不同的阶段处理交易：
 
 [来源：Solana 通过少数分叉（处理后）丢弃交易](https://solana.com/docs/core/transactions/retry#before-a-transaction-is-processed)
 
-临时网络分叉也可能导致交易丢失。如果验证者在银行阶段缓慢重播其块，可能会创建一个**少数分叉**。当客户端构建交易时，交易可能引用仅存在于少数分叉上的 **recentBlockhash**。在提交交易后，集群可能会在交易处理之前切换到其少数分叉。在这种情况下，由于未找到 blockhash，交易将被丢弃。
+临时网络分叉也可能导致交易丢失。如果验证者在 Banking 阶段缓慢重播其块，可能会创建一个**少数分叉**。当客户端构建交易时，交易可能引用仅存在于少数分叉上的 **recentBlockhash**。在提交交易后，集群可能会在交易处理之前切换到其少数分叉。在这种情况下，由于未找到区块哈希，交易将被丢弃。
 
 ## 如何确保交易成功？
 
@@ -122,7 +122,7 @@ TPU 在五个不同的阶段处理交易：
 
 ### TLDR;
 
-*   使用承诺“**confirmed**”或“**finalized**”获取最新的 blockhash
+*   使用承诺“**confirmed**”或“**finalized**”获取最新的区块哈希
 *   将 **skipPreflight** 设置为 **true**
 *   优化请求的计算单元数量
 *   动态添加和计算优先手续费
@@ -131,7 +131,7 @@ TPU 在五个不同的阶段处理交易：
 *   探索质押连接
 *   如果交易不受时间限制，请使用[持久性 nonce](https://www.helius.dev/blog/solana-transactions)
 
-### Blockhash
+###区块哈希
 
 交易有限的时间被验证者处理。如果与交易相关的区块哈希在验证者处理之前过期，交易将被取消。为确保你的交易成功，重要的是使用最新的区块哈希发送交易。如果区块哈希在验证者处理你的交易之前过期，你可以使用新的区块哈希重新尝试交易，以确保成功处理。这可以通过两种方式完成：
 
@@ -197,7 +197,7 @@ Helius 提供 Atlas，我们的抵押加权服务，可以帮助你完成交易�
 
 ### 持久性 Nonce
 
-[持久性 nonce](https://docs.solanalabs.com/implemented-proposals/durable-tx-nonces)允许创建和签署可以在将来的任何时间点提交的交易。它们用于[情况](https://solana.com/developers/guides/advanced/introduction-to-durable-nonces#durable-nonce-applications)如需要更多时间生成交易签名的托管服务。如果你的交易不是时间敏感的，可以使用此方法规避交易的**recentBlockhash**的短生命周期。
+[持久性 nonce](https://docs.solanalabs.com/implemented-proposals/durable-tx-nonces) 允许创建和签署可以在将来的任何时间点提交的交易。它们用于[情况](https://solana.com/developers/guides/advanced/introduction-to-durable-nonces#durable-nonce-applications)如需要更多时间生成交易签名的托管服务。如果你的交易不是时间敏感的，可以使用此方法规避交易的 **recentBlockhash** 的短生命周期。
 
 要开始使用持久性交易，你需要提交一个调用指令以在链上创建特殊的“nonce”账户并在其中存储“持久性区块哈希”的交易。Nonce 账户存储 nonce 的值。只要 nonce 账户尚未被使用，你可以按照以下两个规则创建持久性交易：
 
