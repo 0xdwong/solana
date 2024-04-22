@@ -158,7 +158,7 @@ TPU 在五个不同的阶段处理交易：
 
 ### 计算单位
 
-当交易在网络上确认时，它会消耗一些区块中可用的总计算单位（CU）。目前，区块上的总计算限制为 [48M CU](https://github.com/solana-labs/solana/blob/master/cost-model/src/block_cost_limits.rs#L64-L68)。开发人员可以为其交易指定计算单位预算。如果他们没有设置预算，则使用[默认值为 1,400,000](https://github.com/solana-labs/solana/blob/27eff8408b7223bb3c4ab70523f8a8dca3ca6645/program-runtime/src/compute_budget_processor.rs#L19)，这比大多数交易���要的要高。许多交易不使用整个 CU 预算，因为请求比必要的更高的预算没有惩罚。然而，一开始请求太多的计算单位会使调度交易变得更加困难，因为调度程序在交易执行之前不知道区块中剩余多少计算。为避免这种情况，开发人员应设置更好范围的 CU 请求，以匹配交易需求。你可以参考这篇[指南](https://solana.com/developers/guides/advanced/how-to-optimize-compute)来优化计算单位预算。在即将推出的 Solana 客户端 v1.18 更新中， [需要更少计算单位的交易将获得更高优先级](https://github.com/solana-labs/solana/pull/34888) 。
+当交易在网络上确认时，它会消耗一些区块中可用的总计算单位（CU）。目前，区块上的总计算限制为 [48M CU](https://github.com/solana-labs/solana/blob/master/cost-model/src/block_cost_limits.rs#L64-L68)。开发人员可以为其交易指定计算单位预算。如果他们没有设置预算，则使用[默认值为 1,400,000](https://github.com/solana-labs/solana/blob/27eff8408b7223bb3c4ab70523f8a8dca3ca6645/program-runtime/src/compute_budget_processor.rs#L19)，这比大多数交易所需的要高。许多交易不使用整个 CU 预算，因为请求比必要的更高的预算没有惩罚。然而，一开始请求太多的计算单位会使调度交易变得更加困难，因为调度程序在交易执行之前不知道区块中剩余多少计算。为避免这种情况，开发人员应设置更好范围的 CU 请求，以匹配交易需求。你可以参考这篇[指南](https://solana.com/developers/guides/advanced/how-to-optimize-compute)来优化计算单位预算。在即将推出的 Solana 客户端 v1.18 更新中， [需要更少计算单位的交易将获得更高优先级](https://github.com/solana-labs/solana/pull/34888) 。
 
 优化你的计算单位（CU）使用具有以下好处：
 
